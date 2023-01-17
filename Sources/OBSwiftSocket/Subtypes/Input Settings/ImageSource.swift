@@ -12,6 +12,12 @@ extension InputSettings {
     public struct ImageSource: InputSettingsProtocol {
         public static var type: String { "image_source" }
         public static var systemImageName: String? { "photo" }
+
+        public init(file: String) {
+            self.file = file
+            self.unload = false
+            self.linear_alpha = false
+        }
         
         // Defaults
         
