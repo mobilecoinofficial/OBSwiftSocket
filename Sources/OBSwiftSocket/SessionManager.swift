@@ -278,7 +278,7 @@ extension OBSSessionManager {
               let body = OpDataTypes.Request(type: type, id: UUID().uuidString, request: request) else {
             throw Errors.buildingRequest
         }
-        
+
         async let sendMsg: () = try sendMessage(body)
         async let pub = try publisher(forResponseTo: request, withID: body.id)
             .eraseToAnyPublisher()
@@ -301,7 +301,7 @@ extension OBSSessionManager {
             return Fail(error: Errors.buildingRequest)
                 .eraseToAnyPublisher()
         }
-        
+
         return Publishers.Zip(try sendMessage(body),
                               publisher(forResponseTo: request, withID: body.id))
             .map(\.1)
@@ -531,9 +531,11 @@ extension OBSSessionManager {
             .map(\.data)
             // This catches any requests whose associated responses are empty objects.
             .replaceNil(with: .emptyObject)
-            .tryCompactMap { try $0.toCodable(R.ResponseType.self) }
-            .first() // Finishes the stream after allowing 1 of the correct type through
+            .tryCompactMap { (data) -> R.ResponseType? in
+                try? data.toCodable(R.ResponseType.self)
+            }
             .receive(on: publisherDataQueue)
+            .first() // Finishes the stream after allowing 1 of the correct type through
             .handleEvents(receiveCompletion: { [weak self, pubID] _ in
                 self?.publishers.responsePublishers.removeValue(forKey: pubID)
             })

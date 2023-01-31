@@ -101,7 +101,7 @@ public protocol OBSRequest: Codable {
 /// All types of ``OBSRequest/ResponseType``s conform to this.
 public protocol OBSRequestResponse: Codable {}
 
-extension OBSRequest {
+public extension OBSRequest {
     /// Self's metatype as a string.
     static var typeName: String {
         String(describing: self)
