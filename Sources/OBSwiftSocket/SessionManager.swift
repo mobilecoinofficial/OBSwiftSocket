@@ -126,7 +126,7 @@ extension OBSSessionManager {
         
         // Set up listeners/publishers before starting connection.
         // Once the connection is upgraded, the websocket server will immediately send an OpCode 0 `Hello` message to the client.
-        let hello = try await publisher(forFirstMessageOfType: OpDataTypes.Hello.self)
+        let hello = try await publisher(forAllMessagesOfType: OpDataTypes.Hello.self)
             .timeout(.seconds(10), scheduler: self.publisherDataQueue, customError: { Errors.timedOutWaitingToConnect })
             .eraseToAnyPublisher()
             .firstValue
@@ -145,7 +145,7 @@ extension OBSSessionManager {
             //   - If authentication is required and the Identify message data does not contain an authentication string, or the string is not correct, the connection is closed with WebSocketCloseCode::AuthenticationFailed
             //   - If the client has requested an rpcVersion which the server cannot use, the connection is closed with WebSocketCloseCode::UnsupportedRpcVersion. This system allows both the server and client to have seamless backwards compatability.
             //  - If any other parameters are malformed (invalid type, etc), the connection is closed with an appropriate close code.
-            async let identified = try publisher(forFirstMessageOfType: OpDataTypes.Identified.self)
+            async let identified = try publisher(forAllMessagesOfType: OpDataTypes.Identified.self)
                 .timeout(.seconds(10), scheduler: self.publisherDataQueue, customError: { Errors.timedOutWaitingToConnect })
                 .eraseToAnyPublisher()
                 .firstValue
@@ -407,7 +407,7 @@ extension OBSSessionManager {
             .handleEvents(receiveCompletion: { [weak self] _ in
                 self?.publishers.anyOpCode = nil
             })
-            .share()
+//            .share()
             .eraseToAnyPublisher()
         
         publisherDataQueue.sync {
@@ -435,7 +435,7 @@ extension OBSSessionManager {
             .handleEvents(receiveCompletion: { [weak self] _ in
                 self?.publishers.anyOpCodeData = nil
             })
-            .share()
+//            .share()
             .eraseToAnyPublisher()
         
         publisherDataQueue.sync {
@@ -468,10 +468,7 @@ extension OBSSessionManager {
         let pub = publisherAnyOpCodeData
             .compactMap { $0 as? Op }
             .receive(on: publisherDataQueue)
-            .handleEvents(receiveCompletion: { [weak self] _ in
-                self?.publishers.allMessagesOfType.removeValue(forKey: Op.opCode)
-            })
-            .share()
+//            .share()
             .eraseToAnyPublisher()
         
         publisherDataQueue.sync {
@@ -567,8 +564,8 @@ extension OBSSessionManager {
         
         let batchResponsePub = self.publisher(forAllMessagesOfType: OpDataTypes.RequestBatchResponse.self)
             .filter { [id] receivedMsgBody in receivedMsgBody.id == id }
-            .first() // Finishes the stream after allowing 1 of the correct type through
             .receive(on: publisherDataQueue)
+            .first() // Finishes the stream after allowing 1 of the correct type through
             .handleEvents(receiveCompletion: { [weak self] _ in
                 self?.publishers.batchResponsePublishers.removeValue(forKey: id)
             })
